@@ -5,9 +5,10 @@ from django.conf.urls.static import static
 from django.shortcuts import redirect
 
 urlpatterns = [
-path('', lambda request: redirect('admin/')),
+    path('', lambda request: redirect('admin/')),
     path('admin/', admin.site.urls),
     path('api/', include('lms.urls')),
+    path('api/', include('users.urls')),  # добавляем маршруты для users
 ]
 
 if settings.DEBUG:
