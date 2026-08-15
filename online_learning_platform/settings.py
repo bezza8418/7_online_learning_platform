@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # сторонние
     'rest_framework',
+    'django_filters',
     # свои
     'users',
     'lms',
