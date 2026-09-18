@@ -11,9 +11,11 @@ from rest_framework_simplejwt.views import (
 urlpatterns = [
     path('', lambda request: redirect('admin/')),
     path('admin/', admin.site.urls),
-    # JWT-токены (доступны без авторизации)
+    # JWT-токены
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    # Для Browsable API (login/logout)
+    path('api-auth/', include('rest_framework.urls')),
     # API
     path('api/', include('lms.urls')),
     path('api/', include('users.urls')),
