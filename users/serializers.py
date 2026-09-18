@@ -9,8 +9,16 @@ class PaymentSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class UserPublicSerializer(serializers.ModelSerializer):
+    """Публичный сериализатор пользователя (без пароля, фамилии, истории платежей)"""
+
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'first_name', 'phone', 'city', 'avatar']
+
+
 class UserSerializer(serializers.ModelSerializer):
-    """Сериализатор для пользователя с историей платежей"""
+    """Полный сериализатор пользователя (для своего профиля)"""
     payments = PaymentSerializer(source='payments.all', many=True, read_only=True)
 
     class Meta:

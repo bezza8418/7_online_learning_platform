@@ -12,7 +12,13 @@ class IsOwner(permissions.BasePermission):
     """Проверяет, является ли пользователь владельцем объекта"""
 
     def has_object_permission(self, request, view, obj):
-        # Проверяем, есть ли у объекта поле owner
         if hasattr(obj, 'owner'):
             return obj.owner == request.user
         return False
+
+
+class IsOwnerProfile(permissions.BasePermission):
+    """Проверяет, что пользователь редактирует свой профиль"""
+
+    def has_object_permission(self, request, view, obj):
+        return obj == request.user

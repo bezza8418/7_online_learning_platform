@@ -4,10 +4,12 @@ from rest_framework.filters import OrderingFilter
 from .models import User, Payment
 from .serializers import (
     UserSerializer,
+    UserPublicSerializer,
     UserRegistrationSerializer,
     PaymentSerializer,
 )
 from .filters import PaymentFilter
+from .permissions import IsOwnerProfile
 
 
 class UserRegistrationView(generics.CreateAPIView):
@@ -27,8 +29,19 @@ class UserListCreateView(generics.ListCreateAPIView):
 class UserRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     """Получение, обновление и удаление пользователя"""
     queryset = User.objects.all()
-    serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_class(self):
+        """Для просмотра чужого профиля — публичный сериализатор"""
+        if self.request.method == 'GET' and self.get_object() != self.request.user:
+            return UserPublicSerializer
+        return UserSerializer
+
+    def get_permissions(self):
+        """Редактировать можно только свой профиль"""
+        if self.request.method in ['PUT', 'PATCH', 'DELETE']:
+            return [permissions.IsAuthenticated(), IsOwnerProfile()]
+        return [permissions.IsAuthenticated()]
 
 
 class PaymentListCreateView(generics.ListCreateAPIView):
