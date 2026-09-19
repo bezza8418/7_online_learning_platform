@@ -228,10 +228,15 @@ class SubscriptionTestCase(TestCase):
 
     def test_is_subscribed_false_for_other_user(self):
         """Для другого пользователя is_subscribed = False"""
+        # Делаем other_user владельцем курса, чтобы он мог его видеть
+        self.course.owner = self.other_user
+        self.course.save()
+
         # Подписываем первого пользователя
         self.client.force_authenticate(user=self.user)
         self.client.post('/api/subscribe/', {'course_id': self.course.id})
-        # Проверяем от лица другого пользователя
+
+        # Проверяем от лица другого пользователя (владельца)
         self.client.force_authenticate(user=self.other_user)
         response = self.client.get(f'/api/courses/{self.course.id}/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -306,7 +311,7 @@ class CourseTestCase(TestCase):
         """Другой пользователь НЕ может обновить чужой курс"""
         self.client.force_authenticate(user=self.other_user)
         response = self.client.patch(f'/api/courses/{self.course.id}/', {'name': 'Обновлён'})
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_course_update_by_moderator(self):
         """Модератор может обновить любой курс"""
