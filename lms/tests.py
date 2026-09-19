@@ -224,3 +224,92 @@ class SubscriptionTestCase(TestCase):
         response = self.client.get(f'/api/courses/{self.course.id}/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertFalse(response.data['is_subscribed'])
+
+
+class CourseTestCase(TestCase):
+    """Тесты CRUD для курсов"""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email='course_user@example.com',
+            password='testpass123'
+        )
+        self.moderator = User.objects.create_user(
+            email='course_moder@example.com',
+            password='testpass123'
+        )
+        self.other_user = User.objects.create_user(
+            email='course_other@example.com',
+            password='testpass123'
+        )
+        self.moderator_group = Group.objects.create(name='Модераторы')
+        self.moderator.groups.add(self.moderator_group)
+
+        self.course = Course.objects.create(
+            name='Тестовый курс',
+            description='Описание',
+            owner=self.user
+        )
+        self.client = APIClient()
+
+    def test_course_list_authenticated(self):
+        """Авторизованный пользователь видит список курсов"""
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get('/api/courses/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_course_list_unauthorized(self):
+        """Неавторизованный пользователь не видит список курсов"""
+        response = self.client.get('/api/courses/')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_course_create_by_user(self):
+        """Обычный пользователь может создать курс"""
+        self.client.force_authenticate(user=self.user)
+        data = {'name': 'Новый курс', 'description': 'Описание'}
+        response = self.client.post('/api/courses/', data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['owner'], self.user.id)
+
+    def test_course_create_by_moderator(self):
+        """Модератор НЕ может создать курс"""
+        self.client.force_authenticate(user=self.moderator)
+        data = {'name': 'Новый курс', 'description': 'Описание'}
+        response = self.client.post('/api/courses/', data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_course_retrieve(self):
+        """Получение одного курса"""
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(f'/api/courses/{self.course.id}/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_course_update_by_owner(self):
+        """Владелец может обновить свой курс"""
+        self.client.force_authenticate(user=self.user)
+        response = self.client.patch(f'/api/courses/{self.course.id}/', {'name': 'Обновлён'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_course_update_by_other_user(self):
+        """Другой пользователь НЕ может обновить чужой курс"""
+        self.client.force_authenticate(user=self.other_user)
+        response = self.client.patch(f'/api/courses/{self.course.id}/', {'name': 'Обновлён'})
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_course_update_by_moderator(self):
+        """Модератор может обновить любой курс"""
+        self.client.force_authenticate(user=self.moderator)
+        response = self.client.patch(f'/api/courses/{self.course.id}/', {'name': 'Обновлён модером'})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_course_delete_by_owner(self):
+        """Владелец может удалить свой курс"""
+        self.client.force_authenticate(user=self.user)
+        response = self.client.delete(f'/api/courses/{self.course.id}/')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_course_delete_by_moderator(self):
+        """Модератор НЕ может удалить курс"""
+        self.client.force_authenticate(user=self.moderator)
+        response = self.client.delete(f'/api/courses/{self.course.id}/')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
