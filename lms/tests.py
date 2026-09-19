@@ -4,6 +4,7 @@ from rest_framework import status
 from django.contrib.auth.models import Group
 from users.models import User
 from lms.models import Course, Lesson
+from lms.models import Course, Lesson, Subscription
 
 
 class LessonTestCase(TestCase):
@@ -147,3 +148,79 @@ class LessonTestCase(TestCase):
         self.client.force_authenticate(user=self.user)
         response = self.client.delete(f'/api/lessons/{self.lesson.id}/')
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+
+class SubscriptionTestCase(TestCase):
+    """Тесты для подписки на курс"""
+
+    def setUp(self):
+        """Создаём тестовые данные"""
+        self.user = User.objects.create_user(
+            email='sub_user@example.com',
+            password='testpass123'
+        )
+        self.other_user = User.objects.create_user(
+            email='sub_other@example.com',
+            password='testpass123'
+        )
+        self.course = Course.objects.create(
+            name='Курс для подписки',
+            description='Описание',
+            owner=self.user
+        )
+        self.client = APIClient()
+
+    def test_subscribe_authorized(self):
+        """Авторизованный пользователь может подписаться на курс"""
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post('/api/subscribe/', {'course_id': self.course.id})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['message'], 'подписка добавлена')
+        self.assertTrue(
+            Subscription.objects.filter(user=self.user, course=self.course).exists()
+        )
+
+    def test_unsubscribe(self):
+        """Повторный запрос удаляет подписку"""
+        self.client.force_authenticate(user=self.user)
+        # Сначала подписываемся
+        self.client.post('/api/subscribe/', {'course_id': self.course.id})
+        # Потом отписываемся
+        response = self.client.post('/api/subscribe/', {'course_id': self.course.id})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['message'], 'подписка удалена')
+        self.assertFalse(
+            Subscription.objects.filter(user=self.user, course=self.course).exists()
+        )
+
+    def test_subscribe_unauthorized(self):
+        """Неавторизованный пользователь не может подписаться"""
+        response = self.client.post('/api/subscribe/', {'course_id': self.course.id})
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_subscribe_course_not_found(self):
+        """Подписка на несуществующий курс возвращает 404"""
+        self.client.force_authenticate(user=self.user)
+        response = self.client.post('/api/subscribe/', {'course_id': 99999})
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_is_subscribed_field_in_course(self):
+        """В сериализаторе курса отображается признак подписки"""
+        self.client.force_authenticate(user=self.user)
+        # Подписываемся
+        self.client.post('/api/subscribe/', {'course_id': self.course.id})
+        # Проверяем поле is_subscribed
+        response = self.client.get(f'/api/courses/{self.course.id}/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['is_subscribed'])
+
+    def test_is_subscribed_false_for_other_user(self):
+        """Для другого пользователя is_subscribed = False"""
+        # Подписываем первого пользователя
+        self.client.force_authenticate(user=self.user)
+        self.client.post('/api/subscribe/', {'course_id': self.course.id})
+        # Проверяем от лица другого пользователя
+        self.client.force_authenticate(user=self.other_user)
+        response = self.client.get(f'/api/courses/{self.course.id}/')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data['is_subscribed'])
