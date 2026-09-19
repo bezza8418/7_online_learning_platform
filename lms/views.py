@@ -5,12 +5,14 @@ from django.shortcuts import get_object_or_404
 from .models import Course, Lesson, Subscription
 from .serializers import CourseSerializer, LessonSerializer
 from users.permissions import IsModerator, IsOwner
+from .paginators import StandardResultsSetPagination
 
 
 class CourseViewSet(viewsets.ModelViewSet):
     """ViewSet для модели Course (полный CRUD)"""
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
+    pagination_class = StandardResultsSetPagination
 
     def get_permissions(self):
         if self.action == 'create':
@@ -32,6 +34,7 @@ class LessonListCreateView(generics.ListCreateAPIView):
     queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = StandardResultsSetPagination
 
     def get_permissions(self):
         if self.request.method == 'POST':
