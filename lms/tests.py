@@ -143,6 +143,18 @@ class LessonTestCase(TestCase):
         response = self.client.post('/api/lessons/', data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_lesson_fake_youtube_link(self):
+        """Ссылка на fake-youtube.com не проходит валидацию"""
+        self.client.force_authenticate(user=self.user)
+        data = {
+            'name': 'Новый урок',
+            'description': 'Описание',
+            'video_link': 'https://fake-youtube.com/watch?v=test',
+            'course': self.course.id
+        }
+        response = self.client.post('/api/lessons/', data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_lesson_delete_by_owner(self):
         """Владелец может удалить свой урок"""
         self.client.force_authenticate(user=self.user)
