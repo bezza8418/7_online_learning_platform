@@ -9,9 +9,11 @@ class IsModerator(permissions.BasePermission):
 
 
 class IsOwner(permissions.BasePermission):
-    """Проверяет, является ли пользователь владельцем объекта"""
+    """Проверяет, является ли пользователь владельцем объекта и не модератором"""
 
     def has_object_permission(self, request, view, obj):
+        if request.user.groups.filter(name='Модераторы').exists():
+            return False
         if hasattr(obj, 'owner'):
             return obj.owner == request.user
         return False

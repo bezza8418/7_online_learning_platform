@@ -55,7 +55,7 @@ class LessonRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_permissions(self):
         if self.request.method == 'DELETE':
-            self.permission_classes = [permissions.IsAuthenticated, ~IsModerator, IsOwner]
+            self.permission_classes = [permissions.IsAuthenticated, IsOwner]
         elif self.request.method in ['PUT', 'PATCH']:
             self.permission_classes = [permissions.IsAuthenticated, IsModerator | IsOwner]
         else:
