@@ -7,14 +7,15 @@ class IsModerator(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user.groups.filter(name='Модераторы').exists()
 
+    def has_object_permission(self, request, view, obj):
+        # Модератор имеет доступ к любому объекту
+        return request.user.groups.filter(name='Модераторы').exists()
+
 
 class IsOwner(permissions.BasePermission):
-    """Проверяет, что пользователь — владелец объекта и не модератор"""
+    """Проверяет, является ли пользователь владельцем объекта"""
 
     def has_object_permission(self, request, view, obj):
-        # Модератор не может быть владельцем для целей удаления
-        if request.user.groups.filter(name='Модераторы').exists():
-            return False
         if hasattr(obj, 'owner'):
             return obj.owner == request.user
         return False
