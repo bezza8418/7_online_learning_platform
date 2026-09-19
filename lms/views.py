@@ -14,15 +14,22 @@ class CourseViewSet(viewsets.ModelViewSet):
     serializer_class = CourseSerializer
     pagination_class = StandardResultsSetPagination
 
+    def get_queryset(self):
+        """Фильтрация: модератор видит всё, обычный — только своё"""
+        user = self.request.user
+        if user.groups.filter(name='Модераторы').exists():
+            return Course.objects.all()
+        return Course.objects.filter(owner=user)
+
     def get_permissions(self):
         if self.action == 'create':
             self.permission_classes = [permissions.IsAuthenticated, ~IsModerator]
         elif self.action == 'destroy':
-            self.permission_classes = [permissions.IsAuthenticated, IsOwner]
+            self.permission_classes = [permissions.IsAuthenticated, ~IsModerator, IsOwner]
         elif self.action in ['update', 'partial_update']:
             self.permission_classes = [permissions.IsAuthenticated, IsModerator | IsOwner]
         else:
-            self.permission_classes = [permissions.IsAuthenticated]
+            self.permission_classes = [permissions.IsAuthenticated, IsModerator | IsOwner]
         return super().get_permissions()
 
     def perform_create(self, serializer):
@@ -35,6 +42,13 @@ class LessonListCreateView(generics.ListCreateAPIView):
     serializer_class = LessonSerializer
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = StandardResultsSetPagination
+
+    def get_queryset(self):
+        """Фильтрация: модератор видит всё, обычный — только своё"""
+        user = self.request.user
+        if user.groups.filter(name='Модераторы').exists():
+            return Lesson.objects.all()
+        return Lesson.objects.filter(owner=user)
 
     def get_permissions(self):
         if self.request.method == 'POST':
