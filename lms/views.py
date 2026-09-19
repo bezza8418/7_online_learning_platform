@@ -13,7 +13,6 @@ class CourseViewSet(viewsets.ModelViewSet):
     serializer_class = CourseSerializer
 
     def get_permissions(self):
-        """Разные права для разных действий"""
         if self.action == 'create':
             self.permission_classes = [permissions.IsAuthenticated, ~IsModerator]
         elif self.action == 'destroy':
@@ -25,7 +24,6 @@ class CourseViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
     def perform_create(self, serializer):
-        """Привязываем создаваемый курс к авторизованному пользователю"""
         serializer.save(owner=self.request.user)
 
 
@@ -43,7 +41,6 @@ class LessonListCreateView(generics.ListCreateAPIView):
         return super().get_permissions()
 
     def perform_create(self, serializer):
-        """Привязываем создаваемый урок к авторизованному пользователю"""
         serializer.save(owner=self.request.user)
 
 
@@ -74,11 +71,9 @@ class SubscriptionAPIView(APIView):
 
         subs_item = Subscription.objects.filter(user=user, course=course_item)
 
-        # Если подписка есть — удаляем
         if subs_item.exists():
             subs_item.delete()
             message = 'подписка удалена'
-        # Если подписки нет — создаём
         else:
             Subscription.objects.create(user=user, course=course_item)
             message = 'подписка добавлена'
