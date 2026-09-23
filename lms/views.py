@@ -6,6 +6,18 @@ from .models import Course, Lesson, Subscription
 from .serializers import CourseSerializer, LessonSerializer
 from users.permissions import IsModerator, IsOwner
 from .paginators import StandardResultsSetPagination
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
+from rest_framework import serializers
+
+
+class SubscriptionRequestSerializer(serializers.Serializer):
+    """Сериализатор для запроса подписки"""
+    course_id = serializers.IntegerField(help_text='ID курса')
+
+
+class SubscriptionResponseSerializer(serializers.Serializer):
+    """Сериализатор для ответа подписки"""
+    message = serializers.CharField(help_text='Сообщение о результате')
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -82,6 +94,27 @@ class SubscriptionAPIView(APIView):
     """Управление подпиской на обновления курса"""
     permission_classes = [permissions.IsAuthenticated]
 
+    @extend_schema(
+        summary='Управление подпиской на курс',
+        description='Если подписка есть — удаляет, если нет — создаёт.',
+        request=SubscriptionRequestSerializer,
+        responses={
+            200: SubscriptionResponseSerializer,
+            404: OpenApiResponse(description='Курс не найден'),
+        },
+        examples=[
+            OpenApiExample(
+                'Пример запроса',
+                value={'course_id': 1},
+                request_only=True,
+            ),
+            OpenApiExample(
+                'Пример ответа',
+                value={'message': 'подписка добавлена'},
+                response_only=True,
+            ),
+        ],
+    )
     def post(self, *args, **kwargs):
         user = self.request.user
         course_id = self.request.data.get('course_id')

@@ -10,13 +10,24 @@ from .serializers import (
 )
 from .filters import PaymentFilter
 from .permissions import IsOwnerProfile
-
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
 
 class UserRegistrationView(generics.CreateAPIView):
     """Регистрация нового пользователя (доступна без авторизации)"""
     queryset = User.objects.all()
     serializer_class = UserRegistrationSerializer
     permission_classes = [permissions.AllowAny]
+
+    @extend_schema(
+        summary='Регистрация пользователя',
+        description='Создаёт нового пользователя. Доступно без авторизации.',
+        responses={
+            201: UserRegistrationSerializer,
+            400: OpenApiResponse(description='Ошибка валидации'),
+        },
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
 
 
 class UserListCreateView(generics.ListCreateAPIView):
@@ -52,3 +63,16 @@ class PaymentListCreateView(generics.ListCreateAPIView):
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = PaymentFilter
     ordering_fields = ['payment_date']
+
+    @extend_schema(
+        summary='Список платежей',
+        description='Возвращает список платежей с фильтрацией и сортировкой.',
+        parameters=[
+            OpenApiParameter(name='paid_course', description='ID курса', required=False, type=int),
+            OpenApiParameter(name='paid_lesson', description='ID урока', required=False, type=int),
+            OpenApiParameter(name='payment_method', description='Способ оплаты (cash/transfer)', required=False, type=str),
+            OpenApiParameter(name='ordering', description='Сортировка по дате (payment_date/-payment_date)', required=False, type=str),
+        ],
+    )
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
