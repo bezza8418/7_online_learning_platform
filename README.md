@@ -384,6 +384,82 @@ ALLOWED_HOSTS=localhost,127.0.0.1
 STRIPE_PUBLISHABLE_KEY=pk_test_...
 STRIPE_SECRET_KEY=sk_test_...
 
+## Celery и Redis
+
+Проект использует **Celery** для асинхронных задач и **celery-beat** для периодических задач.
+
+### Настройка
+
+Все настройки Redis вынесены в `.env`:
+
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_DB=0
+
+### Запуск
+
+**Celery worker:**
+
+celery -A online_learning_platform worker -l info -P solo
+
+**Celery beat (планировщик):**
+
+celery -A online_learning_platform beat -l info
+
+---
+
+## Асинхронные задачи
+
+### Отправка письма подписчикам курса
+
+**Задача:** `lms.tasks.send_course_update_email`
+
+**Когда вызывается:** при обновлении курса через API (если курс не обновлялся более 4 часов).
+
+**Что делает:** отправляет письмо всем подписчикам курса.
+
+### Блокировка неактивных пользователей
+
+**Задача:** `users.tasks.block_inactive_users`
+
+**Когда вызывается:** по расписанию — каждый день в 3:00 (Europe/Moscow).
+
+**Что делает:** блокирует пользователей, которые не заходили более месяца (`is_active = False`). Обновление батчевое.
+
+---
+
+## Расписание celery-beat
+
+CELERY_BEAT_SCHEDULE = {
+    'block-inactive-users': {
+        'task': 'users.tasks.block_inactive_users',
+        'schedule': crontab(hour=3, minute=0),
+    },
+}
+
+---
+
+## Переменные окружения
+
+В `.env` должны быть:
+
+DB_NAME=your_db_name
+DB_USER=your_db_user
+DB_PASSWORD=your_db_password
+DB_HOST=localhost
+DB_PORT=5432
+
+SECRET_KEY=your-secret-key
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_SECRET_KEY=sk_test_...
+
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_DB=0
+
 ## 📄 Лицензия
 Проект разработан в учебных целях.
 
