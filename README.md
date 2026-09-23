@@ -296,6 +296,94 @@ coverage report
 Отчёт покрытия — в файле `coverage.txt`.
 
 
+## Документация API
+
+Проект использует **drf-spectacular** для генерации OpenAPI-схемы.
+
+### Swagger UI
+
+http://127.0.0.1:8000/api/docs/
+
+### ReDoc
+
+http://127.0.0.1:8000/api/redoc/
+
+### OpenAPI Schema (JSON)
+
+http://127.0.0.1:8000/api/schema/
+
+---
+
+## Оплата через Stripe
+
+### Создание платежа
+
+POST /api/payments/create/
+{
+    "course_id": 1,
+    "amount": 5000
+}
+
+Или для урока:
+
+POST /api/payments/create/
+{
+    "lesson_id": 1,
+    "amount": 1500
+}
+
+Ответ:
+{
+    "payment_id": 1,
+    "payment_link": "https://checkout.stripe.com/...",
+    "amount": 5000
+}
+
+**Важно:** при передаче в Stripe сумма указывается в копейках (рубли * 100).
+
+### Проверка статуса платежа
+
+POST /api/payments/status/
+{
+    "session_id": "cs_test_..."
+}
+
+Ответ:
+{
+    "session_id": "cs_test_...",
+    "payment_status": "paid",
+    "amount_total": 500000,
+    "currency": "rub"
+}
+
+---
+
+## Тестовые карты Stripe
+
+Для тестирования используйте карты из документации:
+https://stripe.com/docs/terminal/references/testing#standard-test-cards
+
+Пример: `4242 4242 4242 4242` (любая дата в будущем, любой CVC).
+
+---
+
+## Переменные окружения
+
+В `.env` должны быть:
+
+DB_NAME=your_db_name
+DB_USER=your_db_user
+DB_PASSWORD=your_db_password
+DB_HOST=localhost
+DB_PORT=5432
+
+SECRET_KEY=your-secret-key
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+STRIPE_SECRET_KEY=sk_test_...
+
 ## 📄 Лицензия
 Проект разработан в учебных целях.
 
