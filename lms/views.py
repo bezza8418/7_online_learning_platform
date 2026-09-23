@@ -9,6 +9,8 @@ from .paginators import StandardResultsSetPagination
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
 from rest_framework import serializers
 from .tasks import send_course_update_email
+from django.utils import timezone
+from datetime import timedelta
 
 
 class SubscriptionRequestSerializer(serializers.Serializer):
@@ -49,9 +51,19 @@ class CourseViewSet(viewsets.ModelViewSet):
         serializer.save(owner=self.request.user)
 
     def perform_update(self, serializer):
-        """После обновления курса отправляем письма подписчикам"""
+        """После обновления курса отправляем письма подписчикам (с проверкой 4 часов)"""
+        # Получаем старую дату обновления ДО сохранения
+        instance = self.get_object()
+        old_updated_at = instance.updated_at
+
+        # Сохраняем
         course = serializer.save()
-        send_course_update_email.delay(course.id)
+
+        # Проверяем, прошло ли больше 4 часов
+        four_hours_ago = timezone.now() - timedelta(hours=4)
+
+        if old_updated_at < four_hours_ago:
+            send_course_update_email.delay(course.id)
 
 
 class LessonListCreateView(generics.ListCreateAPIView):
