@@ -201,3 +201,73 @@ class PaymentCreateAPIView(APIView):
                 {'error': f'Ошибка Stripe: {str(e)}'},
                 status=400
             )
+
+
+from .services import retrieve_stripe_session
+
+
+class PaymentStatusAPIView(APIView):
+    """
+    Проверка статуса платежа через Stripe.
+
+    Принимает ID сессии Stripe, возвращает статус платежа.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        summary='Проверка статуса платежа',
+        description='Получает данные о сессии из Stripe по её ID.',
+        request={
+            'application/json': {
+                'type': 'object',
+                'properties': {
+                    'session_id': {'type': 'string', 'description': 'ID сессии в Stripe'},
+                },
+                'required': ['session_id'],
+            }
+        },
+        responses={
+            200: OpenApiResponse(description='Данные о статусе платежа'),
+            400: OpenApiResponse(description='Ошибка'),
+            404: OpenApiResponse(description='Сессия не найдена'),
+        },
+        examples=[
+            OpenApiExample(
+                'Пример запроса',
+                value={'session_id': 'cs_test_...'},
+                request_only=True,
+            ),
+            OpenApiExample(
+                'Пример ответа',
+                value={
+                    'session_id': 'cs_test_...',
+                    'payment_status': 'paid',
+                    'amount_total': 500000,
+                    'currency': 'rub',
+                },
+                response_only=True,
+            ),
+        ],
+    )
+    def post(self, request, *args, **kwargs):
+        session_id = request.data.get('session_id')
+
+        if not session_id:
+            return Response(
+                {'error': 'Поле session_id обязательно'},
+                status=400
+            )
+
+        try:
+            session = retrieve_stripe_session(session_id)
+            return Response({
+                'session_id': session.id,
+                'payment_status': session.payment_status,
+                'amount_total': session.amount_total,
+                'currency': session.currency,
+            })
+        except stripe.StripeError as e:
+            return Response(
+                {'error': f'Ошибка Stripe: {str(e)}'},
+                status=400
+            )
