@@ -8,6 +8,7 @@ from users.permissions import IsModerator, IsOwner
 from .paginators import StandardResultsSetPagination
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
 from rest_framework import serializers
+from .tasks import send_course_update_email
 
 
 class SubscriptionRequestSerializer(serializers.Serializer):
@@ -46,6 +47,11 @@ class CourseViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
+
+    def perform_update(self, serializer):
+        """После обновления курса отправляем письма подписчикам"""
+        course = serializer.save()
+        send_course_update_email.delay(course.id)
 
 
 class LessonListCreateView(generics.ListCreateAPIView):

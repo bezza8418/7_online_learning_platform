@@ -198,5 +198,10 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 минут
 
+# Принудительно RESP2 для совместимости со старыми Redis
+CELERY_BROKER_TRANSPORT_OPTIONS = {
+    'protocol': 2,
+}
+
 # Расписание celery-beat
 CELERY_BEAT_SCHEDULE = {}
