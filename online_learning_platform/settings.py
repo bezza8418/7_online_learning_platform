@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+from celery.schedules import crontab
 
 # Загружаем переменные окружения из .env
 load_dotenv()
@@ -204,4 +205,9 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {
 }
 
 # Расписание celery-beat
-CELERY_BEAT_SCHEDULE = {}
+CELERY_BEAT_SCHEDULE = {
+    'block-inactive-users': {
+        'task': 'users.tasks.block_inactive_users',
+        'schedule': crontab(hour=3, minute=0),  # каждый день в 3:00
+    },
+}
