@@ -76,3 +76,128 @@ class PaymentListCreateView(generics.ListCreateAPIView):
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
+from .services import (
+    create_stripe_product,
+    create_stripe_price,
+    create_stripe_session,
+)
+from lms.models import Course, Lesson
+import stripe
+
+
+class PaymentCreateAPIView(APIView):
+    """
+    Создание платежа через Stripe.
+
+    Принимает ID курса или урока, создаёт продукт, цену и сессию в Stripe,
+    сохраняет ссылку на оплату в модели Payment и возвращает её пользователю.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        summary='Создание платежа через Stripe',
+        description='Создаёт продукт, цену и сессию в Stripe, возвращает ссылку на оплату.',
+        request={
+            'application/json': {
+                'type': 'object',
+                'properties': {
+                    'course_id': {'type': 'integer', 'description': 'ID курса'},
+                    'lesson_id': {'type': 'integer', 'description': 'ID урока'},
+                    'amount': {'type': 'integer', 'description': 'Сумма в рублях'},
+                },
+                'required': ['amount'],
+            }
+        },
+        responses={
+            200: OpenApiResponse(description='Ссылка на оплату и данные платежа'),
+            400: OpenApiResponse(description='Ошибка валидации'),
+            404: OpenApiResponse(description='Курс или урок не найден'),
+        },
+        examples=[
+            OpenApiExample(
+                'Пример запроса',
+                value={'course_id': 1, 'amount': 5000},
+                request_only=True,
+            ),
+            OpenApiExample(
+                'Пример ответа',
+                value={
+                    'payment_id': 1,
+                    'payment_link': 'https://checkout.stripe.com/...',
+                    'amount': 5000,
+                },
+                response_only=True,
+            ),
+        ],
+    )
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        course_id = request.data.get('course_id')
+        lesson_id = request.data.get('lesson_id')
+        amount = request.data.get('amount')
+
+        # Валидация
+        if not amount:
+            return Response(
+                {'error': 'Поле amount обязательно'},
+                status=400
+            )
+
+        course = None
+        lesson = None
+
+        if course_id:
+            course = get_object_or_404(Course, id=course_id)
+        elif lesson_id:
+            lesson = get_object_or_404(Lesson, id=lesson_id)
+        else:
+            return Response(
+                {'error': 'Укажите course_id или lesson_id'},
+                status=400
+            )
+
+        # Определяем название продукта
+        product_name = course.name if course else lesson.name
+
+        try:
+            # 1. Создаём продукт в Stripe
+            product = create_stripe_product(product_name)
+
+            # 2. Создаём цену в Stripe (в копейках!)
+            price = create_stripe_price(product.id, amount * 100)
+
+            # 3. Создаём сессию оплаты
+            success_url = 'http://127.0.0.1:8000/api/payments/success/'
+            cancel_url = 'http://127.0.0.1:8000/api/payments/cancel/'
+            session = create_stripe_session(price.id, success_url, cancel_url)
+
+            # 4. Сохраняем платёж в нашей БД
+            payment = Payment.objects.create(
+                user=user,
+                paid_course=course,
+                paid_lesson=lesson,
+                amount=amount,
+                payment_method='transfer',
+                stripe_product_id=product.id,
+                stripe_price_id=price.id,
+                stripe_session_id=session.id,
+                payment_link=session.url,
+            )
+
+            return Response({
+                'payment_id': payment.id,
+                'payment_link': session.url,
+                'amount': amount,
+            })
+
+        except stripe.StripeError as e:
+            return Response(
+                {'error': f'Ошибка Stripe: {str(e)}'},
+                status=400
+            )

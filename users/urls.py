@@ -4,6 +4,7 @@ from .views import (
     UserListCreateView,
     UserRetrieveUpdateDestroyView,
     PaymentListCreateView,
+    PaymentCreateAPIView,
 )
 
 urlpatterns = [
@@ -14,4 +15,5 @@ urlpatterns = [
     path('users/<int:pk>/', UserRetrieveUpdateDestroyView.as_view(), name='user-retrieve-update-destroy'),
     # Платежи
     path('payments/', PaymentListCreateView.as_view(), name='payment-list-create'),
+    path('payments/create/', PaymentCreateAPIView.as_view(), name='payment-create'),
 ]
