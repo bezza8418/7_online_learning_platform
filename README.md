@@ -1,467 +1,62 @@
 # 7_online_learning_platform
 
-Платформа для онлайн-обучения (LMS). Реализована на Django REST Framework.
+Платформа для онлайн-обучения (LMS) на Django REST Framework.
 
 ---
 
-## Технологии
+## Быстрый старт через Docker
 
-- Python 3.12+
-- Django 5.x
-- Django REST Framework
-- PostgreSQL
-- Pillow (для работы с изображениями)
-- python-dotenv
+1. Создайте `.env` по примеру `.env.example`
+2. Запустите:
+   docker-compose up --build
+3. Приложение доступно:
+   - API: http://localhost:8000/api/
+   - Админка: http://localhost:8000/admin/
+   - Swagger: http://localhost:8000/api/docs/
+   - ReDoc: http://localhost:8000/api/redoc/
+4. Создайте суперпользователя:
+   docker-compose exec web python manage.py createsuperuser
+5. Остановка:
+   docker-compose down
+---
 
-## Установка и запуск
-```
-1. Клонируйте репозиторий:
+## Локальный запуск
 
-   git clone https://github.com/ваш_ник/7_online_learning_platform.git
-   cd 7_online_learning_platform
-
-2. Создайте виртуальное окружение и активируйте его:
-
-   python -m venv venv
-   source venv/bin/activate  # для Linux/Mac
-   venv\Scripts\activate     # для Windows
-
-3. Установите зависимости:
-
+1. Установите зависимости:
    pip install -r requirements.txt
-
-4. Создайте файл .env и заполните его по примеру .env.example:
-
-   DB_NAME=your_db_name
-   DB_USER=your_db_user
-   DB_PASSWORD=your_db_password
-   DB_HOST=localhost
-   DB_PORT=5432
-
-   SECRET_KEY=your-secret-key
-   DEBUG=True
-   ALLOWED_HOSTS=localhost,127.0.0.1
-
-5. Создайте базу данных PostgreSQL:
-
-   CREATE DATABASE your_db_name;
-
-6. Примените миграции:
-
+2. Примените миграции:
    python manage.py migrate
-
-7. Создайте суперпользователя:
-
-   python manage.py createsuperuser
-
-8. Запустите сервер:
-
+3. Запустите сервер:
    python manage.py runserver
-```
-
-## API Эндпоинты
-
-### Курсы (ViewSet)
-
-| Метод | URL | Описание |
-|-------|-----|----------|
-| GET | /api/courses/ | Список курсов |
-| POST | /api/courses/ | Создать курс |
-| GET | /api/courses/{id}/ | Получить курс |
-| PUT | /api/courses/{id}/ | Обновить курс |
-| PATCH | /api/courses/{id}/ | Частично обновить курс |
-| DELETE | /api/courses/{id}/ | Удалить курс |
-
-### Уроки (Generic-классы)
-
-| Метод | URL | Описание |
-|-------|-----|----------|
-| GET | /api/lessons/ | Список уроков |
-| POST | /api/lessons/ | Создать урок |
-| GET | /api/lessons/{id}/ | Получить урок |
-| PUT | /api/lessons/{id}/ | Обновить урок |
-| PATCH | /api/lessons/{id}/ | Частично обновить урок |
-| DELETE | /api/lessons/{id}/ | Удалить урок |
-
-### Пользователи
-
-| Метод | URL | Описание |
-|-------|-----|----------|
-| GET | /api/users/ | Список пользователей |
-| POST | /api/users/ | Создать пользователя |
-| GET | /api/users/{id}/ | Получить пользователя |
-| PUT | /api/users/{id}/ | Обновить пользователя |
-| PATCH | /api/users/{id}/ | Частично обновить пользователя |
-| DELETE | /api/users/{id}/ | Удалить пользователя |
-
-### Админка
-
-- /admin/ — стандартная админка Django
-
 ---
 
-## Модели
+## Переменные окружения
 
-### User (кастомная модель)
+Создайте `.env` по примеру `.env.example`:
 
-- Авторизация по email (USERNAME_FIELD = 'email')
-- Поля: email, phone, city, avatar
+```env
+SECRET_KEY=your-secret-key
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1,web
 
-### Course
+DB_NAME=online_learning_db
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_HOST=db
+DB_PORT=5432
 
-- name — название курса
-- preview — превью (картинка)
-- description — описание
-
-### Lesson
-
-- name — название урока
-- description — описание
-- preview — превью (картинка)
-- video_link — ссылка на видео
-- Связь с Course (ForeignKey)
-
----
-
-## Проверка в Postman
-
-Все эндпоинты доступны по адресу: http://127.0.0.1:8000/api/
-
-Пример запроса на создание курса:
-
-{
-    "name": "Python для начинающих",
-    "preview": null,
-    "description": "Базовый курс по Python"
-}
-
-Пример запроса на создание урока:
-
-{
-    "name": "Урок 1: Введение",
-    "description": "Первое знакомство с Python",
-    "preview": null,
-    "video_link": "https://www.youtube.com/watch?v=example",
-    "course": 1
-}
-
----
-
-# Аутентификация
-
-Проект использует JWT-авторизацию.
-
-### Получение токенов
-
-POST /api/token/
-{
-    "email": "user@example.com",
-    "password": "password"
-}
-
-Ответ:
-{
-    "refresh": "...",
-    "access": "..."
-}
-
-### Обновление токена
-
-POST /api/token/refresh/
-{
-    "refresh": "..."
-}
-
-### Использование токена
-
-В каждом запросе передавайте заголовок:
-Authorization: Bearer <access_token>
-
----
-
-## Регистрация
-
+REDIS_HOST=redis
+REDIS_PORT=6379
+REDIS_DB=0
 ```
-POST /api/register/
-{
-    "email": "user@example.com",
-    "password": "password123",
-    "password_confirm": "password123",
-    "first_name": "Иван",
-    "last_name": "Иванов",
-    "phone": "+79991234567",
-    "city": "Москва"
-}
-```
-
----
-
-## Права доступа
-
-### Группа "Модераторы"
-
-- ✅ Просмотр любых курсов и уроков
-- ✅ Редактирование любых курсов и уроков
-- ❌ Создание курсов и уроков
-- ❌ Удаление курсов и уроков
-
-### Обычные пользователи
-
-- ✅ Просмотр всех курсов и уроков
-- ✅ Создание курсов и уроков
-- ✅ Редактирование **только своих** курсов и уроков
-- ✅ Удаление **только своих** курсов и уроков
-
-### Профиль пользователя
-
-- ✅ Просмотр любого профиля (только общая информация)
-- ✅ Редактирование **только своего** профиля
-
----
-
-## Фикстуры
-
-Для загрузки групп модераторов:
-```
-python manage.py loaddata users/fixtures/groups.json
-```
-
----
-
-## Тестовые данные
-
-Для заполнения платежей:
-```
-python manage.py fill_payments
-```
-
-## Валидация
-
-Ссылки на видео в уроках проходят валидацию по домену:
-- Разрешены: `youtube.com`, `youtu.be` и их поддомены
-- Похожие адреса (`fake-youtube.com`, `notyoutube.com.evil.com`) — отклоняются
-
-## Подписка на курсы
-
-### Управление подпиской
-
-POST /api/subscribe/
-{
-    "course_id": 1
-}
-
-Ответ:
-{
-    "message": "подписка добавлена"  // или "подписка удалена"
-}
-
-### Признак подписки
-
-В сериализаторе курса есть поле `is_subscribed`:
-- `true` — текущий пользователь подписан на курс
-- `false` — не подписан
-
-## Пагинация
-
-Для курсов и уроков настроена пагинация:
-
-- `?page=1` — номер страницы
-- `?page_size=10` — количество элементов на странице (макс. 50)
-
-Пример:
-GET /api/courses/?page=2&page_size=3
-
-### Модераторы
-- Видят все курсы и уроки
-- Могут редактировать любые курсы и уроки
-- **Не могут** создавать и удалять
-
-### Обычные пользователи
-- Видят **только свои** курсы и уроки
-- Могут создавать курсы и уроки
-- Могут редактировать и удалять **только свои** объекты
-- При попытке получить чужой объект — **404** (не 403, чтобы не раскрывать существование)
-
-## Тесты
-
-Проект покрыт тестами (38 тестов):
-
-python manage.py test
-
-### Покрытие тестами
-
-coverage run --source='.' manage.py test
-coverage report
-
-Отчёт покрытия — в файле `coverage.txt`.
-
 
 ## Документация API
+Полная документация всех эндпоинтов — в Swagger:
 
-Проект использует **drf-spectacular** для генерации OpenAPI-схемы.
+http://localhost:8000/api/docs/
 
-### Swagger UI
+## Тесты
+python manage.py test
 
-http://127.0.0.1:8000/api/docs/
-
-### ReDoc
-
-http://127.0.0.1:8000/api/redoc/
-
-### OpenAPI Schema (JSON)
-
-http://127.0.0.1:8000/api/schema/
-
----
-
-## Оплата через Stripe
-
-### Создание платежа
-
-POST /api/payments/create/
-{
-    "course_id": 1,
-    "amount": 5000
-}
-
-Или для урока:
-
-POST /api/payments/create/
-{
-    "lesson_id": 1,
-    "amount": 1500
-}
-
-Ответ:
-{
-    "payment_id": 1,
-    "payment_link": "https://checkout.stripe.com/...",
-    "amount": 5000
-}
-
-**Важно:** при передаче в Stripe сумма указывается в копейках (рубли * 100).
-
-### Проверка статуса платежа
-
-POST /api/payments/status/
-{
-    "session_id": "cs_test_..."
-}
-
-Ответ:
-{
-    "session_id": "cs_test_...",
-    "payment_status": "paid",
-    "amount_total": 500000,
-    "currency": "rub"
-}
-
----
-
-## Тестовые карты Stripe
-
-Для тестирования используйте карты из документации:
-https://stripe.com/docs/terminal/references/testing#standard-test-cards
-
-Пример: `4242 4242 4242 4242` (любая дата в будущем, любой CVC).
-
----
-
-## Переменные окружения
-
-В `.env` должны быть:
-
-DB_NAME=your_db_name
-DB_USER=your_db_user
-DB_PASSWORD=your_db_password
-DB_HOST=localhost
-DB_PORT=5432
-
-SECRET_KEY=your-secret-key
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1
-
-STRIPE_PUBLISHABLE_KEY=pk_test_...
-STRIPE_SECRET_KEY=sk_test_...
-
-## Celery и Redis
-
-Проект использует **Celery** для асинхронных задач и **celery-beat** для периодических задач.
-
-### Настройка
-
-Все настройки Redis вынесены в `.env`:
-
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_DB=0
-
-### Запуск
-
-**Celery worker:**
-
-celery -A online_learning_platform worker -l info -P solo
-
-**Celery beat (планировщик):**
-
-celery -A online_learning_platform beat -l info
-
----
-
-## Асинхронные задачи
-
-### Отправка письма подписчикам курса
-
-**Задача:** `lms.tasks.send_course_update_email`
-
-**Когда вызывается:** при обновлении курса через API (если курс не обновлялся более 4 часов).
-
-**Что делает:** отправляет письмо всем подписчикам курса.
-
-### Блокировка неактивных пользователей
-
-**Задача:** `users.tasks.block_inactive_users`
-
-**Когда вызывается:** по расписанию — каждый день в 3:00 (Europe/Moscow).
-
-**Что делает:** блокирует пользователей, которые не заходили более месяца (`is_active = False`). Обновление батчевое.
-
----
-
-## Расписание celery-beat
-
-CELERY_BEAT_SCHEDULE = {
-    'block-inactive-users': {
-        'task': 'users.tasks.block_inactive_users',
-        'schedule': crontab(hour=3, minute=0),
-    },
-}
-
----
-
-## Переменные окружения
-
-В `.env` должны быть:
-
-DB_NAME=your_db_name
-DB_USER=your_db_user
-DB_PASSWORD=your_db_password
-DB_HOST=localhost
-DB_PORT=5432
-
-SECRET_KEY=your-secret-key
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1
-
-STRIPE_PUBLISHABLE_KEY=pk_test_...
-STRIPE_SECRET_KEY=sk_test_...
-
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_DB=0
-
-## 📄 Лицензия
-Проект разработан в учебных целях.
-
-## 📞 Контакты
-Автор: bezza8418
+## Автор
+bezza8418
