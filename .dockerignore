@@ -16,3 +16,5 @@ htmlcov/
 coverage.txt
 *.log
 README.md
+celerybeat-schedule
+celerybeat-schedule.*
