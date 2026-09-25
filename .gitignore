@@ -228,3 +228,8 @@ Thumbs.db
 # Media and static files (для Django проектов)
 /media/
 /static/
+
+
+*.pyc
+htmlcov/
+coverage.txt
