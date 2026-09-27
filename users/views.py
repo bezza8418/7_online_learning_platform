@@ -10,7 +10,20 @@ from .serializers import (
 )
 from .filters import PaymentFilter
 from .permissions import IsOwnerProfile
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter, OpenApiExample
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
+from .services import (
+    create_stripe_product,
+    create_stripe_price,
+    create_stripe_session,
+)
+from lms.models import Course, Lesson
+import stripe
+
+from .services import retrieve_stripe_session
+
 
 class UserRegistrationView(generics.CreateAPIView):
     """Регистрация нового пользователя (доступна без авторизации)"""
@@ -70,25 +83,22 @@ class PaymentListCreateView(generics.ListCreateAPIView):
         parameters=[
             OpenApiParameter(name='paid_course', description='ID курса', required=False, type=int),
             OpenApiParameter(name='paid_lesson', description='ID урока', required=False, type=int),
-            OpenApiParameter(name='payment_method', description='Способ оплаты (cash/transfer)', required=False, type=str),
-            OpenApiParameter(name='ordering', description='Сортировка по дате (payment_date/-payment_date)', required=False, type=str),
+            OpenApiParameter(
+                name='payment_method',
+                description='Способ оплаты (cash/transfer)',
+                required=False,
+                type=str,
+            ),
+            OpenApiParameter(
+                name='ordering',
+                description='Сортировка по дате (payment_date/-payment_date)',
+                required=False,
+                type=str,
+            ),
         ],
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
-
-
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiExample
-from .services import (
-    create_stripe_product,
-    create_stripe_price,
-    create_stripe_session,
-)
-from lms.models import Course, Lesson
-import stripe
 
 
 class PaymentCreateAPIView(APIView):
@@ -201,9 +211,6 @@ class PaymentCreateAPIView(APIView):
                 {'error': f'Ошибка Stripe: {str(e)}'},
                 status=400
             )
-
-
-from .services import retrieve_stripe_session
 
 
 class PaymentStatusAPIView(APIView):

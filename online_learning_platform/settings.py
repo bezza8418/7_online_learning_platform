@@ -14,6 +14,8 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 from celery.schedules import crontab
+# настройки SimpleJWT
+from datetime import timedelta
 
 # Загружаем переменные окружения из .env
 load_dotenv()
@@ -169,9 +171,6 @@ REST_FRAMEWORK = {
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
-# настройки SimpleJWT
-from datetime import timedelta
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),

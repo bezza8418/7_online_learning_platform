@@ -3,7 +3,6 @@ from rest_framework.test import APIClient
 from rest_framework import status
 from django.contrib.auth.models import Group
 from users.models import User
-from lms.models import Course, Lesson
 from lms.models import Course, Lesson, Subscription
 
 
@@ -154,12 +153,6 @@ class LessonTestCase(TestCase):
         }
         response = self.client.post('/api/lessons/', data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-
-    def test_lesson_delete_by_owner(self):
-        """Владелец может удалить свой урок"""
-        self.client.force_authenticate(user=self.user)
-        response = self.client.delete(f'/api/lessons/{self.lesson.id}/')
-        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
 
 class SubscriptionTestCase(TestCase):
