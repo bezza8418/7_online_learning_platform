@@ -55,6 +55,42 @@ REDIS_DB=0
 
 http://localhost:8000/api/docs/
 
+
+## Деплой
+
+Проект автоматически деплоится на сервер через **GitHub Actions**.
+
+### Как это работает
+
+1. Push в ветку `develop`
+2. GitHub Actions запускает:
+   - **test** — тесты
+   - **lint** — flake8
+   - **deploy** — деплой на сервер по SSH
+3. Если все этапы успешны — проект обновляется на сервере
+
+### Сервер
+
+- **IP**: ваш IP
+- **Проект**: `/var/www/7_online_learning_platform`
+- **Запуск**: `docker compose up -d --build`
+
+### Секреты GitHub
+
+Для деплоя нужны секреты в GitHub:
+- `SERVER_IP` — IP сервера
+- `SERVER_USER` — пользователь
+- `SSH_PRIVATE_KEY` — приватный SSH-ключ
+
+### Ручной деплой
+```
+ssh -i ~/.ssh/github_deploy user@server_ip
+cd /var/www/7_online_learning_platform
+git pull origin develop
+sudo docker compose down
+sudo docker compose up -d --build
+```
+
 ## Тесты
 python manage.py test
 
